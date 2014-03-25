@@ -55,7 +55,8 @@ public final class DefaultClientDriverJettyHandler extends AbstractHandler imple
     private final List<ClientDriverRequestResponsePair> matchedResponses;
     private final RequestMatcher matcher;
     private final List<HttpRealRequest> unexpectedRequests;
-    
+    private boolean failFastOnUnexpectedRequest = true;
+
     /**
      * Constructor which accepts a {@link RequestMatcher}.
      * 
@@ -84,25 +85,30 @@ public final class DefaultClientDriverJettyHandler extends AbstractHandler imple
         LOGGER.info("Handling: {} {}", request.getMethod(), request.getPathInfo());
         
         ClientDriverRequestResponsePair matchingPair = getMatchingRequestPair(request);
-        matchedResponses.add(matchingPair);
-        
-        ClientDriverResponse matchedResponse = matchingPair.getResponse();
-        
-        response.setContentType(matchedResponse.getContentType());
-        response.setStatus(matchedResponse.getStatus());
-        response.setHeader("Server", "rest-client-driver(" + RestDriverProperties.getVersion() + ")");
-        
-        for (Entry<String, String> thisHeader : matchedResponse.getHeaders().entrySet()) {
-            response.setHeader(thisHeader.getKey(), thisHeader.getValue());
+
+        if (matchingPair != null) {
+            matchedResponses.add(matchingPair);
+
+            ClientDriverResponse matchedResponse = matchingPair.getResponse();
+
+            response.setContentType(matchedResponse.getContentType());
+            response.setStatus(matchedResponse.getStatus());
+            response.setHeader("Server", "rest-client-driver(" + RestDriverProperties.getVersion() + ")");
+
+            for (Entry<String, String> thisHeader : matchedResponse.getHeaders().entrySet()) {
+                response.setHeader(thisHeader.getKey(), thisHeader.getValue());
+            }
+
+            if (matchedResponse.hasBody()) {
+                OutputStream output = response.getOutputStream();
+                output.write(matchedResponse.getContentAsBytes());
+            }
+
+            delayIfNecessary(matchingPair.getResponse());
+        } else {
+            response.setStatus(404);
         }
-        
-        if (matchedResponse.hasBody()) {
-            OutputStream output = response.getOutputStream();
-            output.write(matchedResponse.getContentAsBytes());
-        }
-        
-        delayIfNecessary(matchingPair.getResponse());
-        
+
         baseRequest.setHandled(true);
     }
     
@@ -130,30 +136,31 @@ public final class DefaultClientDriverJettyHandler extends AbstractHandler imple
         for (index = 0; index < expectations.size(); index++) {
             ClientDriverExpectation thisExpectation = expectations.get(index);
             ClientDriverRequestResponsePair thisPair = thisExpectation.getPair();
+
             if (matcher.isMatch(realRequest, thisPair.getRequest())) {
-                
                 thisExpectation.match(realRequest);
-                if (matchedExpectation == null) {
-                    matchedExpectation = thisExpectation;
-                    break;
-                }
-                
+                matchedExpectation = thisExpectation;
+                break;
             }
         }
-        
+
         if (matchedExpectation == null) {
             this.unexpectedRequests.add(new HttpRealRequest(request));
-            
-            throw new ClientDriverFailedExpectationException(unexpectedRequests, expectations);
+
+            if (failFastOnUnexpectedRequest) {
+                throw new ClientDriverFailedExpectationException(unexpectedRequests, expectations);
+            } else {
+                return null;
+            }
+        } else {
+            if (matchedExpectation.isSatisfied()) {
+                expectations.remove(index);
+            }
+
+            captureBodyIfRequired(realRequest, matchedExpectation);
+
+            return matchedExpectation.getPair();
         }
-        
-        if (matchedExpectation.isSatisfied()) {
-            expectations.remove(index);
-        }
-        
-        captureBodyIfRequired(realRequest, matchedExpectation);
-        
-        return matchedExpectation.getPair();
     }
     
     private void captureBodyIfRequired(HttpRealRequest realRequest,
@@ -217,14 +224,19 @@ public final class DefaultClientDriverJettyHandler extends AbstractHandler imple
             break;
         }
     }
-    
+
+    @Override
+    public void noFailFastOnUnexpectedRequest() {
+        failFastOnUnexpectedRequest = false;
+    }
+
     @Override
     public void reset() {
         expectations.clear();
         matchedResponses.clear();
         unexpectedRequests.clear();
     }
-    
+
     private void waitFor(long time) {
         try {
             Thread.sleep(time);
@@ -249,5 +261,4 @@ public final class DefaultClientDriverJettyHandler extends AbstractHandler imple
         expectations.add(expectation);
         return expectation;
     }
-    
 }
