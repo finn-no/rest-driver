@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.github.rest-driver</groupId>
         <artifactId>rest-driver</artifactId>
-        <version>1.1.38.2-FINN</version>
+        <version>1.1.38.3-FINN</version>
     </parent>
 
     <dependencies>
