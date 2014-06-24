@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -69,15 +70,15 @@ public class DefaultClientDriverJettyHandlerTest {
         when(mockRequestMatcher.isMatch((RealRequest) anyObject(), (ClientDriverRequest) anyObject())).thenReturn(true);
         when(mockHttpResponse.getOutputStream()).thenReturn(mockServletOutputStream);
     }
-
+    
     @Test
     public void unexpected_request_error_should_include_expectations() throws IOException, ServletException {
         RequestMatcher requestMatcher = mock(RequestMatcher.class);
         when(requestMatcher.isMatch((RealRequest) anyObject(), (ClientDriverRequest) anyObject())).thenReturn(false);
-
+        
         DefaultClientDriverJettyHandler sut = new DefaultClientDriverJettyHandler(requestMatcher);
         sut.addExpectation(new ClientDriverRequest("/not_matched").withMethod(Method.POST), realResponse);
-
+        
         try {
             sut.handle("", mockRequest, mockHttpRequest, mockHttpResponse);
             fail("ClientDriverFailedExpectationException should have been thrown");
@@ -87,7 +88,7 @@ public class DefaultClientDriverJettyHandlerTest {
             assertThat(e.getMessage(), containsString("not_matched"));
         }
     }
-
+    
     @Test
     public void unexpected_request_should_not_fail_fast_if_excluded() throws IOException, ServletException {
         RequestMatcher requestMatcher = mock(RequestMatcher.class);
@@ -110,7 +111,7 @@ public class DefaultClientDriverJettyHandlerTest {
 
     @Test
     public void when_responseContainsBothBodyAndHeaders_headers_shouldBeSetBeforeBody_otherwise_theyWontBeSentAtAll() throws IOException, ServletException {
-
+        
         DefaultClientDriverJettyHandler sut = new DefaultClientDriverJettyHandler(mockRequestMatcher);
         sut.addExpectation(realRequest, realResponse);
         sut.handle("", mockRequest, mockHttpRequest, mockHttpResponse);

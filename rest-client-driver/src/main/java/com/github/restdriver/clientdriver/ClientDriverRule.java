@@ -81,16 +81,16 @@ public final class ClientDriverRule implements TestRule {
     public String getBaseUrl() {
         return clientDriver.getBaseUrl();
     }
-
+    
     /**
      * The port that the underlying ClientDriver is listening too.
-     *
+     * 
      * @return the listening port.
      */
     public int getPort() {
         return clientDriver.getPort();
     }
-
+    
     /**
      * Make the mock not fail fast on an unexpected request.
      */
