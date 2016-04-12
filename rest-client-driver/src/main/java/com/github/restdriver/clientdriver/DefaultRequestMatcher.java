@@ -66,7 +66,7 @@ public final class DefaultRequestMatcher implements RequestMatcher {
     
     private boolean isSameMethod(RealRequest realRequest, ClientDriverRequest expectedRequest) {
         
-        if (realRequest.getMethod() != expectedRequest.getMethod()) {
+        if (!realRequest.getMethod().equals(expectedRequest.getMethod())) {
             LOGGER.info("({} {}) REJECTED on method: expected {} != {}", realRequest.getMethod(), realRequest.getPath(), expectedRequest.getMethod(), realRequest.getMethod());
             return false;
         }
@@ -151,7 +151,7 @@ public final class DefaultRequestMatcher implements RequestMatcher {
         Map<String, Object> actualHeaders = realRequest.getHeaders();
         
         for (String excludedHeader : excludedHeaders) {
-            if (actualHeaders.containsKey(excludedHeader)) {
+            if (actualHeaders.containsKey(excludedHeader.toLowerCase())) {
                 return true;
             }
         }
@@ -172,7 +172,7 @@ public final class DefaultRequestMatcher implements RequestMatcher {
             boolean matched = false;
             
             for (Entry<String, Object> actualHeader : actualHeaders.entrySet()) {
-                if (actualHeader.getKey().equals(expectedHeaderName)) {
+                if (actualHeader.getKey().equalsIgnoreCase(expectedHeaderName)) {
                     Object value = actualHeader.getValue();
                     if (value instanceof Enumeration) {
                         Enumeration<String> valueEnumeration = (Enumeration<String>) value;

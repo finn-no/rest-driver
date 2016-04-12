@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
 /**
  * The ClientDriverRule allows a user to specify expectations on the HTTP requests that are made against it.
  */
-public final class ClientDriverRule implements TestRule {
+public class ClientDriverRule implements TestRule {
     
-    private final ClientDriver clientDriver;
+    private ClientDriver clientDriver;
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientDriverRequest.class);
     
     private static final long IMMEDIATELY = 0;
@@ -50,6 +50,10 @@ public final class ClientDriverRule implements TestRule {
         clientDriver = new ClientDriverFactory().createClientDriver(port);
     }
     
+    protected ClientDriverRule(ClientDriver clientDriver) {
+        this.clientDriver = clientDriver;
+    }
+
     @Override
     public Statement apply(Statement base, Description description) {
         return new ClientDriverStatement(base);
@@ -97,14 +101,14 @@ public final class ClientDriverRule implements TestRule {
     public void noFailFastOnUnexpectedRequest() {
         clientDriver.noFailFastOnUnexpectedRequest();
     }
-
+    
     /**
      * Resets the expectations and requests in the handler.
      */
     public void reset() {
         clientDriver.reset();
     }
-
+    
     /**
      * The given listener will be registered with the Client Driver and executes once execution has
      * completed.
@@ -128,6 +132,8 @@ public final class ClientDriverRule implements TestRule {
      *            The timeout expressed in the specified units.
      * @param units
      *            The {@link TimeUnit} that the timeout is expressed in.
+     * @return
+     *            The newly-created rule
      */
     public ClientDriverRule expectResponsesWithin(final int timeout, final TimeUnit units) {
         expectedResponseTimeout = units.toMillis(timeout);
