@@ -358,7 +358,6 @@ public class ClientDriverSuccessTest {
     }
     
     @Test
-    @Ignore
     public void matchingOnRequestHeaderNotBeingPresent() throws Exception {
         
         String baseUrl = driver.getBaseUrl();
@@ -374,7 +373,7 @@ public class ClientDriverSuccessTest {
         HttpResponse response = client.execute(get);
         
         assertThat(response.getStatusLine().getStatusCode(), is(204));
-        
+
         get = new HttpGet(baseUrl + "/without-header-test");
         get.addHeader(new BasicHeader("Some Header", "hello"));
         response = client.execute(get);
